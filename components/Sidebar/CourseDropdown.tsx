@@ -19,7 +19,7 @@ type CourseDropdownProps = {
   colors: ColorScheme;
   onCourseChange: (course: Course) => void;
   onDeleteCourse: (courseId: string) => void;
-  onCreateCourse: () => void;
+  onAddCourse: () => void;
   hoveredCourseId: string | null;
   setHoveredCourseId: (id: string | null) => void;
   iconOnly?: boolean;
@@ -31,7 +31,7 @@ export const CourseDropdown: React.FC<CourseDropdownProps> = ({
   colors,
   onCourseChange,
   onDeleteCourse,
-  onCreateCourse,
+  onAddCourse,
   hoveredCourseId,
   setHoveredCourseId,
   iconOnly = false,
@@ -67,7 +67,7 @@ export const CourseDropdown: React.FC<CourseDropdownProps> = ({
                 fontWeight: currentCourse.id === course.id ? "bold" : "normal",
               }}
             >
-              <span className="truncate flex-1">{course.name}</span>
+              <span className="truncate flex-1">{course.code}</span>
               {hoveredCourseId === course.id && (
                 <button
                   onClick={(e) => {
@@ -84,9 +84,9 @@ export const CourseDropdown: React.FC<CourseDropdownProps> = ({
           </div>
         ))}
         <DropdownMenuSeparator style={{ backgroundColor: colors.border }} />
-        <DropdownMenuItem onClick={onCreateCourse} className="cursor-pointer" style={{ color: colors.accent }}>
+        <DropdownMenuItem onClick={onAddCourse} className="cursor-pointer" style={{ color: colors.accent }}>
           <PlusIcon className="w-4 h-4 mr-2" />
-          Create New Course
+          Add Course
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

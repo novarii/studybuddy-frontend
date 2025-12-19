@@ -7,10 +7,10 @@ import type { ColorScheme } from "@/types";
 
 type EmptyStateProps = {
   colors: ColorScheme;
-  onCreateCourse: () => void;
+  onAddCourse: () => void;
 };
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ colors, onCreateCourse }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ colors, onAddCourse }) => {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="text-center max-w-md">
@@ -28,17 +28,17 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ colors, onCreateCourse }
         </h2>
 
         <p className="text-sm mb-6" style={{ color: colors.secondaryText }}>
-          Get started by creating your first course. Upload materials, and let our AI assistant help you study smarter.
+          Get started by adding your first course. Upload materials, and let our AI assistant help you study smarter.
         </p>
 
         <div className="space-y-4">
           <Button
-            onClick={onCreateCourse}
+            onClick={onAddCourse}
             className="w-full"
             style={{ backgroundColor: colors.accent, color: colors.buttonIcon }}
           >
             <PlusIcon className="w-4 h-4 mr-2" />
-            Create Your First Course
+            Add Your First Course
           </Button>
 
           <div className="flex items-center gap-4 text-xs" style={{ color: colors.secondaryText }}>

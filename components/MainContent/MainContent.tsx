@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { SlidersHorizontalIcon, UploadIcon, PaperclipIcon, SendIcon, XIcon } from "lucide-react";
+import { SlidersHorizontalIcon, UploadIcon, PaperclipIcon, SendIcon, XIcon, CheckIcon, AlertCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnimatedText } from "@/components/Chat/AnimatedText";
 import type { ColorScheme, ChatMessage } from "@/types";
+import type { UploadItem } from "@/hooks/useDocumentUpload";
 
 type MainContentProps = {
   colors: ColorScheme;
   isDragging: boolean;
-  uploadedFiles: File[];
+  uploads: UploadItem[];
   messages: ChatMessage[];
   inputValue: string;
   isLoading: boolean;
@@ -20,8 +21,8 @@ type MainContentProps = {
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemoveFile: (index: number) => void;
-  onSaveMaterials: () => void;
+  onRemoveUpload: (id: string) => void;
+  onClearCompleted: () => void;
   onOpenMaterials: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: () => void;
@@ -30,7 +31,7 @@ type MainContentProps = {
 export const MainContent: React.FC<MainContentProps> = ({
   colors,
   isDragging,
-  uploadedFiles,
+  uploads,
   messages,
   inputValue,
   isLoading,
@@ -39,8 +40,8 @@ export const MainContent: React.FC<MainContentProps> = ({
   onDragLeave,
   onDrop,
   onFileSelect,
-  onRemoveFile,
-  onSaveMaterials,
+  onRemoveUpload,
+  onClearCompleted,
   onOpenMaterials,
   onInputChange,
   onSendMessage,
@@ -61,6 +62,9 @@ export const MainContent: React.FC<MainContentProps> = ({
       textareaRef.current?.focus();
     }
   }, [isLoading]);
+
+  const completedUploads = uploads.filter((u) => u.status === "success");
+  const hasCompletedUploads = completedUploads.length > 0;
 
   return (
     <main className="flex-1 flex flex-col opacity-0 translate-y-[-1rem] animate-fade-in [--animation-delay:200ms]">
@@ -160,36 +164,59 @@ export const MainContent: React.FC<MainContentProps> = ({
           </div>
         </ScrollArea>
 
-        {uploadedFiles.length > 0 && (
-          <div className="mb-3">
-            <div className="space-y-2 mb-2">
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg"
-                  style={{ backgroundColor: colors.panel, borderColor: colors.border }}
-                >
+        {uploads.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {uploads.map((upload) => (
+              <div
+                key={upload.id}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                style={{ backgroundColor: colors.panel, borderColor: colors.border }}
+              >
+                {upload.status === "success" ? (
+                  <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: "#22c55e" }} />
+                ) : upload.status === "error" ? (
+                  <AlertCircleIcon className="w-4 h-4 flex-shrink-0" style={{ color: "#ef4444" }} />
+                ) : (
                   <PaperclipIcon className="w-4 h-4 flex-shrink-0" style={{ color: colors.secondaryText }} />
-                  <span className="text-sm flex-1 truncate" style={{ color: colors.primaryText }}>
-                    {file.name}
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm truncate block" style={{ color: colors.primaryText }}>
+                    {upload.file.name}
                   </span>
-                  <button onClick={() => onRemoveFile(index)} className="flex-shrink-0" style={{ color: colors.secondaryText }}>
-                    <XIcon className="w-4 h-4" />
-                  </button>
+                  {upload.status === "uploading" && (
+                    <div className="mt-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: colors.border }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{ width: `${upload.progress}%`, backgroundColor: colors.accent }}
+                      />
+                    </div>
+                  )}
+                  {upload.status === "error" && upload.error && (
+                    <span className="text-xs" style={{ color: "#ef4444" }}>
+                      {upload.error}
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-            <Button
-              size="sm"
-              onClick={onSaveMaterials}
-              style={{
-                backgroundColor: colors.accent,
-                color: colors.buttonIcon,
-                width: "100%",
-              }}
-            >
-              Save Materials to Course
-            </Button>
+                <button
+                  onClick={() => onRemoveUpload(upload.id)}
+                  className="flex-shrink-0"
+                  style={{ color: colors.secondaryText }}
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {hasCompletedUploads && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onClearCompleted}
+                className="w-full text-xs"
+                style={{ color: colors.secondaryText }}
+              >
+                Clear completed uploads
+              </Button>
+            )}
           </div>
         )}
 

@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { SunIcon, MoonIcon } from "lucide-react";
+import { SunIcon, MoonIcon, LoaderIcon } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { MainContent } from "@/components/MainContent/MainContent";
 import { RightPanel } from "@/components/RightPanel/RightPanel";
-import { CreateCourseDialog } from "@/components/Dialogs/CreateCourseDialog";
+import { CourseSelectDialog } from "@/components/Dialogs/CourseSelectDialog";
 import { MaterialsDialog } from "@/components/Dialogs/MaterialsDialog";
 import { EmptyState } from "@/components/EmptyState/EmptyState";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { useFileUpload } from "@/hooks/useFileUpload";
+import { useCourses } from "@/hooks/useCourses";
+import { useDocumentUpload } from "@/hooks/useDocumentUpload";
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { useChat } from "@/hooks/useChat";
 import { darkModeColors, lightModeColors } from "@/constants/colors";
@@ -22,103 +23,87 @@ export const StudyBuddyClient = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSlidesCollapsed, setIsSlidesCollapsed] = useState(false);
   const [isVideoCollapsed, setIsVideoCollapsed] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [currentCourseId, setCurrentCourseId] = useState<string>("");
-  const [selectedTopic, setSelectedTopic] = useState("");
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
+  const [isCourseSelectOpen, setIsCourseSelectOpen] = useState(false);
   const [isMaterialsDialogOpen, setIsMaterialsDialogOpen] = useState(false);
-  const [newCourseName, setNewCourseName] = useState("");
   const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
   const [pageNumber] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const colors = isDarkMode ? darkModeColors : lightModeColors;
-  const currentCourse = courses.find((c) => c.id === currentCourseId) ?? courses[0] ?? null;
 
-  const { messages, isLoading, inputValue, setInputValue, sendMessage, deleteCourseHistory } = useChat(currentCourseId);
+  // Use the courses hook for API integration
+  const {
+    userCourses,
+    availableCourses,
+    isLoading: isCoursesLoading,
+    addCourse,
+    removeCourse,
+  } = useCourses();
 
-  const { uploadedFiles, isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop, handleFileSelect, removeFile, clearFiles } = useFileUpload();
+  const currentCourse = userCourses.find((c) => c.id === currentCourseId) ?? userCourses[0] ?? null;
+
+  const { messages, isLoading: isChatLoading, inputValue, setInputValue, sendMessage, deleteCourseHistory } = useChat(currentCourseId);
+
+  const {
+    uploads,
+    isDragging,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleFileSelect,
+    removeUpload,
+    clearCompleted,
+  } = useDocumentUpload(currentCourseId);
 
   const { panelWidth, isResizing, handleMouseDown } = useResizePanel(400, 800, 400);
 
+  // Set current course when userCourses loads and no course is selected
+  if (!currentCourseId && userCourses.length > 0) {
+    setCurrentCourseId(userCourses[0].id);
+  }
+
   const handleCourseChange = (course: Course) => {
     setCurrentCourseId(course.id);
-    setSelectedTopic(course.content[0]?.children[0] || "");
   };
 
-  const handleDeleteCourse = (courseId: string) => {
-    const courseToDelete = courses.find(c => c.id === courseId);
-    const filteredCourses = courses.filter((c) => c.id !== courseId);
-    setCourses(filteredCourses);
+  const handleDeleteCourse = async (courseId: string) => {
+    const courseToDelete = userCourses.find((c) => c.id === courseId);
+    const success = await removeCourse(courseId);
 
-    deleteCourseHistory(courseId);
+    if (success) {
+      deleteCourseHistory(courseId);
 
-    if (currentCourseId === courseId) {
-      if (filteredCourses.length > 0) {
-        setCurrentCourseId(filteredCourses[0].id);
-        setSelectedTopic(filteredCourses[0].content[0]?.children[0] || "");
-      } else {
-        setCurrentCourseId("");
-        setSelectedTopic("");
+      if (currentCourseId === courseId) {
+        const remaining = userCourses.filter((c) => c.id !== courseId);
+        if (remaining.length > 0) {
+          setCurrentCourseId(remaining[0].id);
+        } else {
+          setCurrentCourseId("");
+        }
+      }
+
+      if (courseToDelete) {
+        toast({
+          title: "Course removed",
+          description: `${courseToDelete.code} has been removed from your list.`,
+        });
       }
     }
-
-    if (courseToDelete) {
-      toast({
-        title: "Course deleted",
-        description: `${courseToDelete.name} and its chat history have been removed.`,
-      });
-    }
   };
 
-  const handleCreateCourse = () => {
-    if (!newCourseName.trim()) return;
-
-    const newCourse: Course = {
-      id: `course-${Date.now()}`,
-      name: newCourseName.trim(),
-      content: [],
-    };
-
-    setCourses([...courses, newCourse]);
-    setCurrentCourseId(newCourse.id);
-    setSelectedTopic("");
-    setNewCourseName("");
-    setIsCreateCourseOpen(false);
-
-    toast({
-      title: "Course created",
-      description: `${newCourse.name} has been created successfully`,
-    });
-  };
-
-  const handleSaveMaterials = () => {
-    if (!currentCourse) return;
-
-    try {
-      const newMaterials: Material[] = uploadedFiles.map((file) => ({
-        id: `material-${Date.now()}-${Math.random()}`,
-        name: file.name,
-        file: file,
-        courseId: currentCourseId,
-        type: "pdf" as const,
-      }));
-
-      setMaterials([...materials, ...newMaterials]);
-      clearFiles();
-
+  const handleAddCourse = async (course: Course) => {
+    const success = await addCourse(course);
+    if (success) {
+      setCurrentCourseId(course.id);
       toast({
-        title: "Upload successful",
-        description: `${newMaterials.length} file${newMaterials.length > 1 ? "s" : ""} uploaded to ${currentCourse.name}`,
-      });
-    } catch {
-      toast({
-        title: "Upload failed",
-        description: "Failed to save materials. Please try again.",
-        variant: "destructive",
+        title: "Course added",
+        description: `${course.code} - ${course.title} has been added to your list.`,
       });
     }
+    return success;
   };
 
   const handleUploadClick = () => {
@@ -141,7 +126,7 @@ export const StudyBuddyClient = () => {
     if (material) {
       toast({
         title: "Material deleted",
-        description: `${material.name} has been removed from ${currentCourse.name}`,
+        description: `${material.name} has been removed from ${currentCourse.code}`,
       });
     }
   };
@@ -154,6 +139,18 @@ export const StudyBuddyClient = () => {
     return materials.filter((m) => m.courseId === currentCourseId);
   };
 
+  // Show loading state while courses are loading
+  if (isCoursesLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <div className="flex flex-col items-center gap-4">
+          <LoaderIcon className="w-8 h-8 animate-spin" style={{ color: colors.accent }} />
+          <p style={{ color: colors.secondaryText }}>Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
       {currentCourse ? (
@@ -163,14 +160,12 @@ export const StudyBuddyClient = () => {
             setIsCollapsed={setIsSidebarCollapsed}
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
-            courses={courses}
+            courses={userCourses}
             currentCourse={currentCourse}
-            selectedTopic={selectedTopic}
             colors={colors}
             onCourseChange={handleCourseChange}
-            onTopicSelect={setSelectedTopic}
             onDeleteCourse={handleDeleteCourse}
-            onCreateCourse={() => setIsCreateCourseOpen(true)}
+            onAddCourse={() => setIsCourseSelectOpen(true)}
             hoveredCourseId={hoveredCourseId}
             setHoveredCourseId={setHoveredCourseId}
           />
@@ -178,17 +173,17 @@ export const StudyBuddyClient = () => {
           <MainContent
             colors={colors}
             isDragging={isDragging}
-            uploadedFiles={uploadedFiles}
+            uploads={uploads}
             messages={messages}
             inputValue={inputValue}
-            isLoading={isLoading}
+            isLoading={isChatLoading}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onFileSelect={handleFileSelect}
-            onRemoveFile={removeFile}
-            onSaveMaterials={handleSaveMaterials}
+            onRemoveUpload={removeUpload}
+            onClearCompleted={clearCompleted}
             onOpenMaterials={() => setIsMaterialsDialogOpen(true)}
             onInputChange={setInputValue}
             onSendMessage={sendMessage}
@@ -227,28 +222,25 @@ export const StudyBuddyClient = () => {
           </header>
           <EmptyState
             colors={colors}
-            onCreateCourse={() => setIsCreateCourseOpen(true)}
+            onAddCourse={() => setIsCourseSelectOpen(true)}
           />
         </div>
       )}
 
-      <CreateCourseDialog
-        isOpen={isCreateCourseOpen}
-        courseName={newCourseName}
+      <CourseSelectDialog
+        isOpen={isCourseSelectOpen}
+        courses={availableCourses}
+        isLoading={isCoursesLoading}
         colors={colors}
-        onClose={() => {
-          setIsCreateCourseOpen(false);
-          setNewCourseName("");
-        }}
-        onCourseNameChange={setNewCourseName}
-        onCreate={handleCreateCourse}
+        onClose={() => setIsCourseSelectOpen(false)}
+        onSelectCourse={handleAddCourse}
       />
 
       {currentCourse && (
         <MaterialsDialog
           isOpen={isMaterialsDialogOpen}
           materials={getCurrentCourseMaterials()}
-          courses={courses}
+          courses={userCourses}
           currentCourse={currentCourse}
           colors={colors}
           onClose={() => setIsMaterialsDialogOpen(false)}

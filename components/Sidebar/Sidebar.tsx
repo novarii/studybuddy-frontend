@@ -3,9 +3,7 @@
 import React from "react";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, SunIcon, MoonIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { CourseDropdown } from "./CourseDropdown";
-import { ContentsList } from "./ContentsList";
 import type { Course, ColorScheme } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -16,12 +14,10 @@ type SidebarProps = {
   setIsDarkMode: (dark: boolean) => void;
   courses: Course[];
   currentCourse: Course;
-  selectedTopic: string;
   colors: ColorScheme;
   onCourseChange: (course: Course) => void;
-  onTopicSelect: (topic: string) => void;
   onDeleteCourse: (courseId: string) => void;
-  onCreateCourse: () => void;
+  onAddCourse: () => void;
   hoveredCourseId: string | null;
   setHoveredCourseId: (id: string | null) => void;
 };
@@ -33,12 +29,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsDarkMode,
   courses,
   currentCourse,
-  selectedTopic,
   colors,
   onCourseChange,
-  onTopicSelect,
   onDeleteCourse,
-  onCreateCourse,
+  onAddCourse,
   hoveredCourseId,
   setHoveredCourseId,
 }) => {
@@ -59,15 +53,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               colors={colors}
               onCourseChange={onCourseChange}
               onDeleteCourse={onDeleteCourse}
-              onCreateCourse={onCreateCourse}
+              onAddCourse={onAddCourse}
               hoveredCourseId={hoveredCourseId}
               setHoveredCourseId={setHoveredCourseId}
             />
 
             <div className="flex items-center gap-2 flex-1 min-w-0 ml-2">
-              <h1 className="text-sm font-semibold truncate" style={{ color: colors.primaryText }}>
-                {currentCourse.name}
-              </h1>
+              <div className="truncate">
+                <h1 className="text-sm font-semibold truncate" style={{ color: colors.primaryText }}>
+                  {currentCourse.code}
+                </h1>
+                <p className="text-xs truncate" style={{ color: colors.secondaryText }}>
+                  {currentCourse.title}
+                </p>
+              </div>
             </div>
 
             <button
@@ -81,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: colors.border }}>
             <h2 className="text-sm font-medium" style={{ color: colors.primaryText }}>
-              Contents
+              {currentCourse.instructor || "No instructor"}
             </h2>
             <Button
               variant="ghost"
@@ -94,14 +93,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Button>
           </div>
 
-          <ScrollArea className="flex-1">
-            <ContentsList
-              content={currentCourse.content}
-              selectedTopic={selectedTopic}
-              colors={colors}
-              onTopicSelect={onTopicSelect}
-            />
-          </ScrollArea>
+          <div className="flex-1 p-4">
+            <p className="text-xs" style={{ color: colors.secondaryText }}>
+              Upload course materials or ask questions about this course in the chat.
+            </p>
+          </div>
         </>
       ) : (
         <>
@@ -112,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               colors={colors}
               onCourseChange={onCourseChange}
               onDeleteCourse={onDeleteCourse}
-              onCreateCourse={onCreateCourse}
+              onAddCourse={onAddCourse}
               hoveredCourseId={hoveredCourseId}
               setHoveredCourseId={setHoveredCourseId}
               iconOnly

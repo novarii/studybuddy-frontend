@@ -33,7 +33,7 @@ export const MaterialsDialog: React.FC<MaterialsDialogProps> = ({
       <DialogContent style={{ backgroundColor: colors.panel, borderColor: colors.border }} className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle style={{ color: colors.primaryText }}>Course Materials</DialogTitle>
-          <DialogDescription style={{ color: colors.secondaryText }}>Manage materials for {currentCourse.name}</DialogDescription>
+          <DialogDescription style={{ color: colors.secondaryText }}>Manage materials for {currentCourse.code}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
@@ -69,7 +69,7 @@ export const MaterialsDialog: React.FC<MaterialsDialogProps> = ({
                               .filter((c) => c.id !== currentCourse.id)
                               .map((course) => (
                                 <DropdownMenuItem key={course.id} onClick={() => onMoveMaterial(material.id, course.id)} className="cursor-pointer" style={{ color: colors.primaryText }}>
-                                  {course.name}
+                                  {course.code}
                                 </DropdownMenuItem>
                               ))}
                           </DropdownMenuContent>
@@ -108,7 +108,7 @@ export const MaterialsDialog: React.FC<MaterialsDialogProps> = ({
                               .filter((c) => c.id !== currentCourse.id)
                               .map((course) => (
                                 <DropdownMenuItem key={course.id} onClick={() => onMoveMaterial(material.id, course.id)} className="cursor-pointer" style={{ color: colors.primaryText }}>
-                                  {course.name}
+                                  {course.code}
                                 </DropdownMenuItem>
                               ))}
                           </DropdownMenuContent>

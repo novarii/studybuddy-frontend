@@ -16,14 +16,25 @@ export type Material = {
   type: MaterialType;
 };
 
+// Matches backend CourseResponse schema
 export type Course = {
   id: string;
-  name: string;
-  content: Array<{
-    id: string;
-    title: string;
-    children: string[];
-  }>;
+  code: string;
+  title: string;
+  instructor: string | null;
+};
+
+// Document from backend
+export type Document = {
+  id: string;
+  course_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  page_count: number | null;
+  status: "uploaded" | "failed";
+  created_at: string;
+  updated_at: string;
 };
 
 export type ColorScheme = {
