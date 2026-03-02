@@ -300,3 +300,25 @@ export type NewCourse = typeof courses.$inferInsert;
 
 export type UserCourse = typeof userCourses.$inferSelect;
 export type NewUserCourse = typeof userCourses.$inferInsert;
+
+// Agent API keys for programmatic access (e.g. Claude Code, scripts)
+export const agentApiKeys = aiSchema.table(
+  'agent_api_keys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull(),
+    keyHash: text('key_hash').notNull().unique(), // SHA-256 of the raw key
+    label: text('label'),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('idx_agent_api_keys_user_id').on(table.userId),
+    index('idx_agent_api_keys_key_hash').on(table.keyHash),
+  ]
+);
+
+export type AgentApiKey = typeof agentApiKeys.$inferSelect;
+export type NewAgentApiKey = typeof agentApiKeys.$inferInsert;

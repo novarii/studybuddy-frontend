@@ -11,9 +11,9 @@ import {
   type UIMessage,
 } from 'ai';
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
-import { db, chatSessions, chatMessages, courses } from '@/lib/db';
+import { db, chatSessions, chatMessages, courses, lectures, userLectures, documents } from '@/lib/db';
 import {
   searchKnowledge,
   SYSTEM_PROMPT,
@@ -238,6 +238,63 @@ export async function POST(req: Request) {
               }
 
               return context;
+            },
+          }),
+          list_lectures: tool({
+            description:
+              'List all available lectures for this course. Use this to see what lectures exist before searching specific ones.',
+            inputSchema: z.object({}),
+            execute: async () => {
+              toolCallCount++;
+              console.log(`[Chat] Tool call #${toolCallCount}: list_lectures()`);
+
+              const results = await db
+                .select({
+                  id: lectures.id,
+                  title: lectures.title,
+                  durationSeconds: lectures.durationSeconds,
+                  status: lectures.status,
+                })
+                .from(lectures)
+                .innerJoin(userLectures, eq(lectures.id, userLectures.lectureId))
+                .where(
+                  and(
+                    eq(userLectures.userId, userId),
+                    eq(lectures.courseId, courseId)
+                  )
+                )
+                .orderBy(desc(lectures.createdAt));
+
+              return JSON.stringify(results.map((l) => ({
+                id: l.id,
+                title: l.title,
+                durationSeconds: l.durationSeconds,
+                status: l.status,
+              })));
+            },
+          }),
+          list_documents: tool({
+            description:
+              'List all available documents (PDFs/slides) for this course. Use this to see what documents exist before searching specific ones.',
+            inputSchema: z.object({}),
+            execute: async () => {
+              toolCallCount++;
+              console.log(`[Chat] Tool call #${toolCallCount}: list_documents()`);
+
+              const docs = await db.query.documents.findMany({
+                where: and(
+                  eq(documents.userId, userId),
+                  eq(documents.courseId, courseId)
+                ),
+                orderBy: [desc(documents.createdAt)],
+              });
+
+              return JSON.stringify(docs.map((doc) => ({
+                id: doc.id,
+                filename: doc.filename,
+                pageCount: doc.pageCount,
+                status: doc.status,
+              })));
             },
           }),
         },

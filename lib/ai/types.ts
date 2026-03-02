@@ -30,6 +30,8 @@ export interface SearchResult {
   context: string;
   /** Rich source metadata for frontend display */
   sources: import('@/types').RAGSource[];
+  /** Raw retrieval results with full content (for agent API use) */
+  rawResults?: RetrievalResult[];
 }
 
 /**

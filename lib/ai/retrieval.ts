@@ -287,5 +287,6 @@ export async function searchKnowledge(
   }
 
   // Format into context and sources, offset by startIndex for multi-call continuity
-  return formatRetrievalContext(allResults, startIndex);
+  const formatted = formatRetrievalContext(allResults, startIndex);
+  return { ...formatted, rawResults: allResults };
 }
